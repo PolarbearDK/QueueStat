@@ -1,4 +1,8 @@
 QueueStat
 =========
 
-Generate statistics from messages in NServieBus MSMQ queue.
+Command line tool to Analyze NServiceBus messages in MSMQ queue.
+
+
+
+
