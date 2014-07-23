@@ -1,0 +1,36 @@
+﻿using System;
+using System.Linq;
+using System.Messaging;
+using Miracle.Arguments;
+
+namespace QueueStat
+{
+	internal class Program
+	{
+		private static int Main(string[] args)
+		{
+			var arguments = args.ParseCommandLine<Arguments>();
+			if (arguments == null)
+				return 1;
+
+			MessageQueue[] queueList = GetMatchingQueues(arguments);
+			if (!queueList.Any())
+			{
+				Console.Error.WriteLine("No queue matched {0}", string.Join(",", arguments.Queues));
+				return 10;
+			}
+
+			using (var processor = new QueueProcessor(arguments))
+			{
+				processor.ProcessQueues(queueList);
+			}
+
+			return 0;
+		}
+
+		private static MessageQueue[] GetMatchingQueues(Arguments parsedArguments)
+		{
+            return parsedArguments.Queues.Select(queue => QueueFactory.GetQueue(parsedArguments.MachineName, queue)).ToArray();
+		}
+	}
+}
