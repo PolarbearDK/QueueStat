@@ -54,8 +54,9 @@
     <Reference Include="Miracle.Arguments">
       <HintPath>..\packages\Miracle.Arguments.5.0.0.2\lib\net40\Miracle.Arguments.dll</HintPath>
     </Reference>
-    <Reference Include="Miracle.Macros">
-      <HintPath>..\packages\Miracle.Macros.4.0.0.1\lib\net40\Miracle.Macros.dll</HintPath>
+    <Reference Include="Miracle.Macros, Version=4.0.0.2, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Miracle.Macros.4.0.0.2\lib\net40\Miracle.Macros.dll</HintPath>
     </Reference>
     <Reference Include="NServiceBus">
       <HintPath>..\packages\NServiceBus.Interfaces.4.4.2\lib\net40\NServiceBus.dll</HintPath>
