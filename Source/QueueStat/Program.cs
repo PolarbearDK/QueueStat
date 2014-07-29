@@ -5,32 +5,53 @@ using Miracle.Arguments;
 
 namespace QueueStat
 {
-	internal class Program
-	{
-		private static int Main(string[] args)
-		{
-			var arguments = args.ParseCommandLine<Arguments>();
-			if (arguments == null)
-				return 1;
+    internal static class Program
+    {
+        private static int Main(string[] args)
+        {
+            var arguments = args.ParseCommandLine<Arguments>();
+            if (arguments == null)
+                return 1;
 
-			MessageQueue[] queueList = GetMatchingQueues(arguments);
-			if (!queueList.Any())
-			{
-				Console.Error.WriteLine("No queue matched {0}", string.Join(",", arguments.Queues));
-				return 10;
-			}
+            var backgroundColor = Console.BackgroundColor;
+            var foregroundColor = Console.ForegroundColor;
 
-			using (var processor = new QueueProcessor(arguments))
-			{
-				processor.ProcessQueues(queueList);
-			}
+            try
+            {
+                return Main(arguments);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("Exception: " + ex.ToString());
+                return 100;
+            }
+            finally
+            {
+                Console.BackgroundColor = backgroundColor;
+                Console.ForegroundColor = foregroundColor;
+            }
+        }
 
-			return 0;
-		}
+        private static int Main(Arguments arguments)
+        {
+            MessageQueue[] queueList = GetMatchingQueues(arguments);
+            if (!queueList.Any())
+            {
+                Console.Error.WriteLine("No queue matched {0}", string.Join(",", arguments.Queues));
+                return 10;
+            }
 
-		private static MessageQueue[] GetMatchingQueues(Arguments parsedArguments)
-		{
+            using (var processor = new QueueProcessor(arguments))
+            {
+                processor.ProcessQueues(queueList);
+            }
+
+            return 0;
+        }
+
+        private static MessageQueue[] GetMatchingQueues(Arguments parsedArguments)
+        {
             return parsedArguments.Queues.Select(queue => QueueFactory.GetQueue(parsedArguments.MachineName, queue)).ToArray();
-		}
-	}
+        }
+    }
 }

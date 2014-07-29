@@ -11,6 +11,8 @@
 		ExceptionType,
 		ExceptionMessage,
 		Machine,
-		ResponseQueue
+		ResponseQueue,
+	    BodyError,
+	    HeaderError
 	}
 }

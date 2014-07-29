@@ -7,8 +7,8 @@ namespace QueueStat
 		ArgumentNameComparison = StringComparison.InvariantCultureIgnoreCase,
 		DuplicateArgumentBehaviour = DuplicateArgumentBehaviour.Unknown,
 		StartOfArgument = new[] { '-' },
-		ValueSeparator = new[] { ':' },
-		ShowHelpOnArgumentErrors = false
+		ValueSeparator = new[] { ' ' },
+		ShowHelpOnArgumentErrors = true
 		)]
 	[ArgumentDescription("Generate NServiceBus MSMQ message statistics.")]
 	public class Arguments
@@ -27,6 +27,10 @@ namespace QueueStat
 		[ArgumentName("Top", "T")]
         [ArgumentDescription("Show only 'top' amount of items for each category. Default is 10.")]
 		public int Top { get; set; }
+
+        [ArgumentName("MaxMessages", "Max")]
+        [ArgumentDescription("Maximum number of messages to process per queue. Default is all messages.")]
+        public int? MaxMessages { get; set; }
 
         [ArgumentName("StatisticsType", "ST")]
         [ArgumentDescription("List only specified statistics types. Default is all statistics types")]
@@ -48,5 +52,6 @@ namespace QueueStat
 		[ArgumentName("Debug", "D")]
         [ArgumentDescription("Enable special debugging features. Not for production.")]
 		public bool Debug { get; set; }
+
 	}
 }

@@ -12,22 +12,20 @@ namespace QueueStat
 	class MessageAnalyzer
 	{
 		private readonly MessageQueue _queue;
-		private readonly bool _idDebug;
 		public DateTime AnalyzeStartDateTime { get; private set; }
 		public DateTime AnalyzeEndDateTime { get; private set; }
 		public string Queue { get { return _queue.Path; } }
 		readonly MessageStatistics _messageStatistics = new MessageStatistics();
 
-		public MessageAnalyzer(MessageQueue messageQueue, bool idDebug)
+		public MessageAnalyzer(MessageQueue messageQueue)
 		{
 			_queue = messageQueue;
-			_idDebug = idDebug;
-			_queue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
+			_queue.Formatter = new XmlMessageFormatter(new [] { typeof(string) });
 			_queue.MessageReadPropertyFilter.Label = true;
 			_queue.MessageReadPropertyFilter.Extension = true;
 		}
 
-		public int AnalyzeMessages()
+		public int AnalyzeMessages(int maxMessages, bool idDebug)
 		{
 			AnalyzeStartDateTime = DateTime.Now;
 			int count = 0;
@@ -35,12 +33,12 @@ namespace QueueStat
 
 			for (
 				Message m = PeekWithoutTimeout(_queue, cursor, PeekAction.Current);
-				m != null;
+				m != null && count < maxMessages;
 				m = PeekWithoutTimeout(_queue, cursor, PeekAction.Next))
 			{
-				count++;
+				if(idDebug) Console.WriteLine(m.Id);
 
-				if(_idDebug) Console.WriteLine(m.Id);
+                count++;
 
 				AnalyzeLabel(m.Label);
 				AnalyzeBody(m);
@@ -48,6 +46,7 @@ namespace QueueStat
 				AddStatistics(StatisticsType.ResponseQueue, m.ResponseQueue);
 			}
 			AnalyzeEndDateTime = DateTime.Now;
+
 			return count;
 		}
 
@@ -99,38 +98,53 @@ namespace QueueStat
 
 		private void AnalyzeBody(Message m)
 		{
-			if (m.BodyStream.Length > 20)
+			if (m.BodyStream.Length > 0)
 			{
-				using (var reader = XmlReader.Create(m.BodyStream))
-				{
-					reader.MoveToContent();
-					if (reader.IsStartElement("Messages"))
-					{
-						reader.Read();
-						reader.MoveToContent();
 
-						AddStatistics(StatisticsType.Uri, reader.NamespaceURI);
-						AddStatistics(StatisticsType.MessageType, reader.NamespaceURI + "." + reader.LocalName);
-					}
-				}
+			    try
+			    {
+			        using (var reader = XmlReader.Create(m.BodyStream))
+			        {
+			            reader.MoveToContent();
+			            if (reader.IsStartElement("Messages"))
+			            {
+			                reader.Read();
+			                reader.MoveToContent();
+
+			                AddStatistics(StatisticsType.Uri, reader.NamespaceURI);
+			                AddStatistics(StatisticsType.MessageType, reader.NamespaceURI + "." + reader.LocalName);
+			            }
+			        }
+			    }
+			    catch (XmlException e)
+			    {
+                    AddStatistics(StatisticsType.BodyError, e.Message);
+			    }
 			}
 		}
 
 		private void AnalyzeExtension(Message message)
 		{
 			var bytes = message.Extension;
-			if (bytes.Length > 20)
+			if (bytes.Length > 0)
 			{
-				using (var mr = new MemoryStream(bytes))
-				{
-					var ser = new XmlSerializer(typeof(HeaderInfo[]));
-					var headers = (HeaderInfo[])ser.Deserialize(mr);
+			    try
+			    {
+			        using (var mr = new MemoryStream(bytes))
+			        {
+			            var ser = new XmlSerializer(typeof(HeaderInfo[]));
+			            var headers = (HeaderInfo[])ser.Deserialize(mr);
 
-					AddStatistics(StatisticsType.ExceptionType, headers.SingleOrDefault(x => x.Key == "NServiceBus.ExceptionInfo.ExceptionType"));
-					AddStatistics(StatisticsType.ExceptionSource, headers.SingleOrDefault(x => x.Key == "NServiceBus.ExceptionInfo.Source"));
-					AddStatistics(StatisticsType.ExceptionMessage, headers.SingleOrDefault(x => x.Key == "NServiceBus.ExceptionInfo.Message"));
-					AddStatistics(StatisticsType.StackTrace, headers.SingleOrDefault(x => x.Key == "NServiceBus.ExceptionInfo.StackTrace"));
-				}
+			            AddStatistics(StatisticsType.ExceptionType, headers.SingleOrDefault(x => x.Key == "NServiceBus.ExceptionInfo.ExceptionType"));
+			            AddStatistics(StatisticsType.ExceptionSource, headers.SingleOrDefault(x => x.Key == "NServiceBus.ExceptionInfo.Source"));
+			            AddStatistics(StatisticsType.ExceptionMessage, headers.SingleOrDefault(x => x.Key == "NServiceBus.ExceptionInfo.Message"));
+			            AddStatistics(StatisticsType.StackTrace, headers.SingleOrDefault(x => x.Key == "NServiceBus.ExceptionInfo.StackTrace"));
+			        }
+			    }
+			    catch (Exception e)
+			    {
+                    AddStatistics(StatisticsType.HeaderError, e.Message);
+                }
 			}
 		}
 

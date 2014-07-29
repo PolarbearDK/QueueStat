@@ -9,7 +9,7 @@ namespace QueueStat
 	public class QueueProcessor : IDisposable
 	{
 		private readonly Arguments _arguments;
-		private readonly XmlWriter writer;
+		private readonly XmlWriter _writer;
 
 		public QueueProcessor(Arguments arguments)
 		{
@@ -27,18 +27,18 @@ namespace QueueStat
 
 				var filename = arguments.Output.ExpandMacros(new{});
 
-				writer = XmlWriter.Create(filename, settings);
-				writer.WriteStartElement("root");
+				_writer = XmlWriter.Create(filename, settings);
+				_writer.WriteStartElement("root");
 			}
 		}
 
 		public void Dispose()
 		{
-			if (writer != null)
+			if (_writer != null)
 			{
-				writer.WriteEndElement();
-				writer.Close();
-				((IDisposable) writer).Dispose();
+				_writer.WriteEndElement();
+				_writer.Close();
+				((IDisposable) _writer).Dispose();
 			}
 		}
 
@@ -68,17 +68,21 @@ namespace QueueStat
 
 		private void ProcessQueue(MessageQueue mq)
 		{
-			ConsoleColor forg = Console.ForegroundColor;
+            var crlf = new[] { '\n', '\r' };
 
-			Console.ForegroundColor = ConsoleColor.Magenta;
-			Console.Write("Queue {0}", mq.Path);
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.WriteLine();
+            Console.Write("Queue {0}", mq.Path);
 
-			var messageStatistics = new MessageAnalyzer(mq, _arguments.Debug);
-			int count = messageStatistics.AnalyzeMessages();
-			Statistics[] statistics = messageStatistics.GetStatistics();
-			var crlf = new[] {'\n', '\r'};
-
-			Console.WriteLine(" contains {0} messages", count);
+			var messageStatistics = new MessageAnalyzer(mq);
+		    var max = _arguments.MaxMessages.GetValueOrDefault(int.MaxValue);
+		    int count = messageStatistics.AnalyzeMessages(max, _arguments.Debug);
+		    Console.WriteLine(
+		        count < max
+		            ? " contains {0} messages."
+		            : " contains at least {0} messages.",
+		        count);
+            Statistics[] statistics = messageStatistics.GetStatistics();
 
 			foreach (var grouping in statistics.GroupBy(x => x.Type).Where(x=> _arguments.StatisticsTypes == null || _arguments.StatisticsTypes.Contains(x.Key)))
 			{
@@ -97,9 +101,6 @@ namespace QueueStat
 				}
 			}
 
-			Console.WriteLine();
-			Console.ForegroundColor = forg;
-
 			if (_arguments.Output != null)
 			{
 				WriteQueue(messageStatistics);
@@ -108,18 +109,17 @@ namespace QueueStat
 
 		private void WriteQueue(MessageAnalyzer ms)
 		{
-			writer.WriteAttributeString("Queue", ms.Queue);
+			_writer.WriteAttributeString("Queue", ms.Queue);
 
-			writer.WriteStartAttribute("StartDateTime");
-			writer.WriteValue( ms.AnalyzeStartDateTime);
-			writer.WriteEndAttribute();
+			_writer.WriteStartAttribute("StartDateTime");
+			_writer.WriteValue( ms.AnalyzeStartDateTime);
+			_writer.WriteEndAttribute();
 
-			writer.WriteStartAttribute("EndDateTime");
-			writer.WriteValue(ms.AnalyzeEndDateTime);
-			writer.WriteEndAttribute();
+			_writer.WriteStartAttribute("EndDateTime");
+			_writer.WriteValue(ms.AnalyzeEndDateTime);
+			_writer.WriteEndAttribute();
 
-			ms.WriteStatistics(writer);
-
+			ms.WriteStatistics(_writer);
 		}
 	}
 }

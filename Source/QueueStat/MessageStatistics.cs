@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Xml;
 
@@ -34,7 +35,7 @@ namespace QueueStat
 		{
 			return _statistics.SelectMany(
 				z => z.Value,
-				(z, y) => new Statistics()
+				(z, y) => new Statistics
 					          {
 						          Type = z.Key,
 						          Value = y.Key,
@@ -50,7 +51,7 @@ namespace QueueStat
 				foreach (var stat in type.Value.OrderByDescending(x => x.Value))
 				{
 					writer.WriteStartElement("Item");
-					writer.WriteAttributeString("Count", stat.Value.ToString());
+					writer.WriteAttributeString("Count", stat.Value.ToString(CultureInfo.InvariantCulture));
     				writer.WriteValue(stat.Key);
 					writer.WriteEndElement();
 				}
